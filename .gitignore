@@ -192,3 +192,5 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+sending_data_xnat/short_anonimised_folder
