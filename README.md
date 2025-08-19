@@ -1,1 +1,10 @@
-# digione-infrastructure
+The docker-compose starts all the docker containers that are involved in the digione project. It starts rabbitMQ, anonymizer, radiomics, send_xnat, xnat-db, xnat-ngix, nxat web. The config.yaml file creates queues in rabbitMQ, this file is shared with the containers via the volumes. It also tells you which queue needs to be used to send the next message when a container has completed his message. When changing titles in the config file makes sure that these are also changed in corresponding repositorie scripts.
+
+The pipeline works as follows: send a message via rabbitMQ to the anonymizer, in this message is the inputfolder, which should correspond to the same folder in the anonymizer volume, and a outputfolder. This outputfolder should also correspond to a local folder via a volume. The anonymizer, anonymizes based on the recipes in anonymiser_recipes folder, it then creates a new rabbitMQ message which sends folder path to the radiomics queue. This calulcates the radiomics features (I have not been able to confirm that the results from this are correct), it again send a new message to the send_xnat conteiner with the folder, where the anonymised data is and the CSV radiomics. This next container saves the data in xnat. Becareful that when changing folder_paths that this also correctly done in the volume part of the docker-compose file.
+
+Needs to be done:
+-I haven't pushed anything to Github because it pulls needs, I am afraid it will cause it to break.
+-Right now the xnat containers are build from a local repository this needs to be change that it builds from a existing image. 
+-When this repository is no longer local the API Curl's in xnat-docker-compose\xnat\XNAT_conf\configure_XNAT.py should be changed.
+-I build the send_xnat container from a repository from TomSinsel, this should be an mdw-nl repostiory maybe the xnat. This has been tried by adding the send_xnat folder to the repository. But it has errors with submodules.
+-Right now in the send_xnat_data repository the way files are sorted to certain projects in xnat is hard coded in the BodyPartExamined tag. When its clear which identifier it should be changed.

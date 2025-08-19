@@ -194,3 +194,6 @@ cython_debug/
 .cursorindexingignore
 
 example_sending_data_xnat/short_anonimised_folder
+
+dicomdata
+data

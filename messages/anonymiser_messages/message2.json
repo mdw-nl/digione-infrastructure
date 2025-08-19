@@ -1,0 +1,4 @@
+{
+  "input_folder_path": "/app/dicom_datasets/dicomdata2",
+  "output_folder_path": "/app/anonimised_folder/anonimised_data2"
+}

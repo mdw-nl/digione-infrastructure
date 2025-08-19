@@ -2,7 +2,7 @@ version: '3'
 services:
   # RabbitMQ service
   rabbitmq:
-    image: "rabbitmq:management"
+    image: "rabbitmq:3-management"
     container_name: "rabbitmq"
     ports:
       - "5672:5672"  # RabbitMQ port for communication
@@ -10,47 +10,154 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "curl", "-f", http://localhost:15672"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
     networks:
       - app_network
 
   anonymizer:
     build:
-      context: .  # Current directory (where the Dockerfile is located)
+      context: https://github.com/mdw-nl/anonymizer.git  # Current directory (where the Dockerfile is located)
+      dockerfile: Dockerfile
     container_name: "anonymizer"
-    depends_on:
-      - rabbitmq  # Wait for RabbitMQ to start before starting the anonymizer
     environment:
       - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
     volumes:
       - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./anonimised_folder:/app/anonimised_folder
-
-
+      - ./data/dicom_datasets:/app/dicom_datasets
+      - ./data/anonymised_datasets:/app/anonimised_folder
+      - ./anonymiser_recipes:/app/anonymiser_recipes
     networks:
       - app_network
 
   # Anonymizer app service
   radiomics:
     build:
-      context: .  # Current directory (where the Dockerfile is located)
+      context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
+      dockerfile: Dockerfile
     container_name: "radiomics"
-    depends_on:
-      - rabbitmq  # Wait for RabbitMQ to start before starting the anonymizer
     environment:
       - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
     volumes:
       - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./radiomics_results:/app/radiomics_results
-
+      - ./data/anonymised_datasets:/app/anonimised_folder
+      - ./radiomics_settings:/app/radiomics_settings
     networks:
       - app_network
 
+  send_xnat:
+    build: 
+      context: https://github.com/TomSinsel/send_xnat_data.git 
+      dockerfile: Dockerfile
+    container_name: "send_xnat"
+    environment:
+      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+    volumes:
+      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+      - ./data/anonymised_datasets:/app/anonimised_folder
+    networks:
+      - app_network
+
+  xnat-web:
+    build:
+      context: ./xnat-docker-compose/xnat
+      # context: https://github.com/mdw-nl/xnat.git#main:xnat
+      # dockerfile: Dockerfile
+      # image: ghcr.io/mdw-nl/mdw-xnat:1.3
+      args:
+        XNAT_VERSION: ${XNAT_VERSION}
+        XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
+        XNAT_SMTP_HOSTNAME: ${XNAT_SMTP_HOSTNAME}
+        XNAT_SMTP_PORT: ${XNAT_SMTP_PORT}
+        XNAT_SMTP_AUTH: ${XNAT_SMTP_AUTH}
+        XNAT_SMTP_USERNAME: ${XNAT_SMTP_USERNAME}
+        XNAT_SMTP_PASSWORD: ${XNAT_SMTP_PASSWORD}
+        XNAT_DATASOURCE_DRIVER: ${XNAT_DATASOURCE_DRIVER}
+        XNAT_DATASOURCE_URL: ${XNAT_DATASOURCE_URL}
+        XNAT_DATASOURCE_USERNAME: ${XNAT_DATASOURCE_USERNAME}
+        XNAT_DATASOURCE_PASSWORD: ${XNAT_DATASOURCE_PASSWORD}
+        TOMCAT_XNAT_FOLDER: ${TOMCAT_XNAT_FOLDER}
+        XNAT_ROOT: ${XNAT_ROOT}
+        XNAT_HOME: ${XNAT_HOME}
+        XNAT_EMAIL: ${XNAT_EMAIL}
+    container_name: xnat-web
+    ports:
+      - 8104:8104
+    volumes:
+      - ./xnat-docker-compose/xnat/plugins:${XNAT_HOME}/plugins
+      - ./xnat-docker-compose/xnat-data/home/logs:${XNAT_HOME}/logs
+      - ./xnat-docker-compose/xnat-data/archive:${XNAT_ROOT}/archive
+      - ./xnat-docker-compose/xnat-data/build:${XNAT_ROOT}/build
+      - ./xnat-docker-compose/xnat-data/cache:${XNAT_ROOT}/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - xnat-db
+    environment:
+      - CATALINA_OPTS=-Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
+      - XNAT_HOME=${XNAT_HOME}
+    networks:
+      - app_network
+
+
+  xnat-db:
+    image: postgres:${PG_VERSION}
+    expose:
+      - "5432"
+    volumes:
+      - ./xnat-docker-compose/postgres-data:/var/lib/postgresql/data
+      # 
+      - ./xnat-docker-compose/postgres:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_PASSWORD=${XNAT_DATASOURCE_ADMIN_PASSWORD}
+      - POSTGRES_DB=${XNAT_DATASOURCE_NAME}
+      # variables for the sql script
+      - XNAT_DATASOURCE_USERNAME=${XNAT_DATASOURCE_USERNAME}
+      - XNAT_DATASOURCE_PASSWORD=${XNAT_DATASOURCE_PASSWORD}
+    networks:
+      - app_network
+
+
+  xnat-nginx:
+    image: nginx:${NGINX_VERSION}
+    volumes:
+      - ./xnat-docker-compose/nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    expose:
+      - "80"
+    depends_on:
+      - xnat-web
+    links:
+      - xnat-web
+    networks:
+      - app_network
 
 networks:
   app_network:

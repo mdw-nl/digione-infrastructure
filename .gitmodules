@@ -1,6 +1,0 @@
-[submodule "anonymizer"]
-	path = anonymizer
-	url = https://github.com/mdw-nl/anonymizer.git
-[submodule "radiomics"]
-	path = radiomics
-	url = https://github.com/mdw-nl/radiomics.git
