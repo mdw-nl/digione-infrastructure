@@ -86,7 +86,7 @@ services:
       - app_network
 
   xnat-web:
-    image: ghcr.io/mdw-nl/mdw-xnat:1.3
+    image: ghcr.io/mdw-nl/mdw-xnat:1.4
     environment:
       XNAT_VERSION: ${XNAT_VERSION}
       XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}

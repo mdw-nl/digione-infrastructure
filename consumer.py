@@ -66,7 +66,7 @@ class Consumer:
                                    on_message_callback=lambda ch, method, properties, body: callback(ch, method,
                                                                                                      properties, body,
                                                                                                      self.executor),
-                                   auto_ack=False)
+                                   auto_ack=True)
         try:
             self.channel.start_consuming()
             time.sleep(10)

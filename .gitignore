@@ -197,3 +197,5 @@ example_sending_data_xnat/short_anonimised_folder
 
 dicomdata
 data
+postgres-data
+xnat-data
