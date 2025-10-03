@@ -1,4 +1,4 @@
 {
   "input_folder_path": "/app/dicom_datasets/dicomdata",
-  "output_folder_path": "/app/anonimised_folder/anonimised_data"
+  "action": "anonymize"
 }

@@ -61,6 +61,28 @@ services:
       - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
       - ./data/anonymised_datasets:/app/anonimised_folder
       - ./radiomics_settings:/app/radiomics_settings
+      - ./data/xnat_listener:/app/data
+    networks:
+      - app_network
+
+  xnat_listener:
+    build:
+      context: https://github.com/TomSinsel/xnat_listener.git  # Current directory (where the Dockerfile is located)
+      dockerfile: Dockerfile
+    container_name: "xnat_listener"
+    environment:
+      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+    volumes:
+      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+      - ./data/xnat_listener:/app/data
     networks:
       - app_network
 
@@ -82,6 +104,7 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
       - ./data/anonymised_datasets:/app/anonimised_folder
+      - ./data/xnat_listener:/app/data
     networks:
       - app_network
 
