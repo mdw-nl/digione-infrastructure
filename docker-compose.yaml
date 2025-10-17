@@ -176,6 +176,21 @@ services:
     networks:
       - app_network
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"  # Access pgAdmin at http://localhost:8080
+    volumes:
+      - ./pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - xnat-db  # Wait until Postgres is ready
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge
