@@ -3,3 +3,4 @@ pynetdicom
 requests
 pyyaml
 pika
+psycopg2
