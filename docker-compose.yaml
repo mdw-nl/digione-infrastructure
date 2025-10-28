@@ -60,7 +60,7 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
       - ./data/anonymised_datasets:/app/anonimised_folder
-      - ./radiomics_settings:/app/radiomics_settings
+      - ./radiomics_settings:/radiomics_settings
       - ./data/xnat_listener:/app/data
     networks:
       - app_network
