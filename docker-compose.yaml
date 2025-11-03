@@ -109,7 +109,7 @@ services:
       - app_network
 
   xnat-web:
-    image: ghcr.io/mdw-nl/mdw-xnat:1.4
+    image: ghcr.io/mdw-nl/mdw-xnat:1.6
     environment:
       XNAT_VERSION: ${XNAT_VERSION}
       XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
@@ -137,6 +137,7 @@ services:
       - ./xnat-data/build:${XNAT_ROOT}/build
       - ./xnat-data/cache:${XNAT_ROOT}/cache
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./XNAT_configure:/XNAT_conf/XNAT_configure
     depends_on:
       - xnat-db
     networks:
