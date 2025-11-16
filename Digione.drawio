@@ -1,0 +1,63 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="28.2.9">
+  <diagram name="Pagina-1" id="u2aXS7gVqSYx_yWwuF4h">
+    <mxGraphModel dx="2253" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nj_iD_enchTciVKGjy9Q-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-1" target="nj_iD_enchTciVKGjy9Q-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-1" value="XNAT" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="353.5" y="280" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-2" target="nj_iD_enchTciVKGjy9Q-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-2" value="anonymizer" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="160" y="430" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-4" target="nj_iD_enchTciVKGjy9Q-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-4" value="radiomics" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="540" y="430" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-5" target="nj_iD_enchTciVKGjy9Q-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="263.5" y="70" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-5" value="RabbitMQ" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="150" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-6" target="nj_iD_enchTciVKGjy9Q-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-6" value="XNAT listener" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="343.5" y="150" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-8" value="send XNAT" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="343.5" y="430" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-9" value="Postgres" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="-30" y="290" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-10" target="nj_iD_enchTciVKGjy9Q-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-10" value="DiCOM sorter" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="-210" y="290" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-8" target="nj_iD_enchTciVKGjy9Q-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nj_iD_enchTciVKGjy9Q-20" target="nj_iD_enchTciVKGjy9Q-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nj_iD_enchTciVKGjy9Q-20" value="RabbitMQ" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="150" width="80" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
