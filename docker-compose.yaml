@@ -86,30 +86,30 @@ services:
     networks:
       - app_network
 
-  send_xnat:
-    build: 
-      context: https://github.com/TomSinsel/send_xnat_data.git 
-      dockerfile: Dockerfile
-    container_name: "send_xnat"
-    environment:
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASSWORD=password
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-    links: 
-      - rabbitmq
-    volumes:
-      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/anonymised_datasets:/app/anonimised_folder
-      - ./data/xnat_listener:/app/data
-    networks:
-      - app_network
+  # send_xnat:
+  #   build: 
+  #     context: https://github.com/TomSinsel/send_xnat_data.git 
+  #     dockerfile: Dockerfile
+  #   container_name: "send_xnat"
+  #   environment:
+  #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+  #     - RABBITMQ_PORT=5672
+  #     - RABBITMQ_USER=user
+  #     - RABBITMQ_PASSWORD=password
+  #   restart: on-failure
+  #   depends_on:
+  #     - rabbitmq
+  #   links: 
+  #     - rabbitmq
+  #   volumes:
+  #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+  #     - ./data/anonymised_datasets:/app/anonimised_folder
+  #     - ./data/xnat_listener:/app/data
+  #   networks:
+  #     - app_network
 
   xnat-web:
-    image: ghcr.io/mdw-nl/mdw-xnat:1.6
+    image: ghcr.io/mdw-nl/mdw-xnat:1.9
     environment:
       XNAT_VERSION: ${XNAT_VERSION}
       XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
@@ -129,6 +129,7 @@ services:
       CATALINA_OPTS: -Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
     container_name: xnat-web
     ports:
+      - 8080:8080
       - 8104:8104
     volumes:
       - ./xnat/plugins:${XNAT_HOME}/plugins
@@ -220,7 +221,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "8080:80"  # Access pgAdmin at http://localhost:8080
+      - "9000:80"  # Access pgAdmin at http://localhost:9000
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
     depends_on:
