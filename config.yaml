@@ -45,3 +45,10 @@ rabbitMQ:
   port: "5672"
   <<: *default_creds
   queue_name: "DICOM_Processor"
+
+scp-receiver:
+  host: "rabbitmq"
+  localhost: "localhost"
+  port: "5672"
+  <<: *default_creds
+  send_queue: "xnat"

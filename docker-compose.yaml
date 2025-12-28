@@ -18,11 +18,29 @@ services:
     networks:
       - app_network
 
-  anonymizer:
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+  scp-receiver:
     build:
-      context: https://github.com/mdw-nl/anonymizer.git  # Current directory (where the Dockerfile is located)
+      context: https://github.com/mdw-nl/DICOM-Listner.git#feature/reject-based-on-patientid  # Current directory (where the Dockerfile is located)
       dockerfile: Dockerfile
-    container_name: "anonymizer"
+    container_name: "scp-receiver"
     environment:
       - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
@@ -31,66 +49,24 @@ services:
     restart: on-failure
     depends_on:
       - rabbitmq
+      - postgres
+    ports:
+      - "104:104"
     links: 
       - rabbitmq
     volumes:
-      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/dicom_datasets:/app/dicom_datasets
-      - ./data/anonymised_datasets:/app/anonimised_folder
       - ./anonymiser_recipes:/recipes
+      - ./data/associationdata:/dicomsorter/data
+      - ./config.yaml:/app/config/config.yaml  # Mount config.yaml into the container
     networks:
       - app_network
 
-  # Anonymizer app service
-  radiomics:
-    build:
-      context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
-      dockerfile: Dockerfile
-    container_name: "radiomics"
-    environment:
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASSWORD=password
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-    links: 
-      - rabbitmq
-    volumes:
-      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/anonymised_datasets:/app/anonimised_folder
-      - ./radiomics_settings:/radiomics_settings
-      - ./data/xnat_listener:/app/data
-    networks:
-      - app_network
-
-  xnat_listener:
-    build:
-      context: https://github.com/TomSinsel/xnat_listener.git  # Current directory (where the Dockerfile is located)
-      dockerfile: Dockerfile
-    container_name: "xnat_listener"
-    environment:
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASSWORD=password
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-    links: 
-      - rabbitmq
-    volumes:
-      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/xnat_listener:/app/data
-    networks:
-      - app_network
-
-  # send_xnat:
-  #   build: 
-  #     context: https://github.com/TomSinsel/send_xnat_data.git 
+  # # Anonymizer app service
+  # radiomics:
+  #   build:
+  #     context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
   #     dockerfile: Dockerfile
-  #   container_name: "send_xnat"
+  #   container_name: "radiomics"
   #   environment:
   #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
   #     - RABBITMQ_PORT=5672
@@ -104,9 +80,54 @@ services:
   #   volumes:
   #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
   #     - ./data/anonymised_datasets:/app/anonimised_folder
+  #     - ./radiomics_settings:/radiomics_settings
   #     - ./data/xnat_listener:/app/data
   #   networks:
   #     - app_network
+
+  # xnat_listener:
+  #   build:
+  #     context: https://github.com/TomSinsel/xnat_listener.git  # Current directory (where the Dockerfile is located)
+  #     dockerfile: Dockerfile
+  #   container_name: "xnat_listener"
+  #   environment:
+  #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+  #     - RABBITMQ_PORT=5672
+  #     - RABBITMQ_USER=user
+  #     - RABBITMQ_PASSWORD=password
+  #   restart: on-failure
+  #   depends_on:
+  #     - rabbitmq
+  #   links: 
+  #     - rabbitmq
+  #   volumes:
+  #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+  #     - ./data/xnat_listener:/app/data
+  #   networks:
+  #     - app_network
+
+  send_xnat:
+    build: 
+      context: https://github.com/TomSinsel/send_xnat_data.git 
+      dockerfile: Dockerfile
+    container_name: "send_xnat"
+    environment:
+      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASSWORD=password
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+    volumes:
+      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+      - ./data/anonymised_datasets:/app/anonimised_folder
+      - ./data/xnat_listener:/app/data
+      - ./data/associationdata:/dicomsorter/data
+    networks:
+      - app_network
 
   xnat-web:
     image: ghcr.io/mdw-nl/mdw-xnat:1.9
@@ -178,56 +199,20 @@ services:
     networks:
       - app_network
 
-  postgres:
-    image: postgres:13
-    container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    networks:
-      - app_network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 80s
-
-  dicom-sorter:
-    build: 
-      context: https://github.com/mdw-nl/DICOM-Listner.git
-      dockerfile: Dockerfile
-    container_name: "dicom_sorter"
-    depends_on:
-      - rabbitmq
-      - postgres
-    environment:
-      - PYTHONUNBUFFERED=1
-    ports:
-      - "104:104"
-    networks:
-      - app_network
-    volumes:
-      - ./data/associationdata:/dicomsorter/data
-      - ./config.yaml:/Config/config.yaml
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "9000:80"  # Access pgAdmin at http://localhost:9000
-    volumes:
-      - ./pgadmin-data:/var/lib/pgadmin
-    depends_on:
-      - xnat-db  # Wait until Postgres is ready
-    networks:
-      - app_network
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   ports:
+  #     - "9000:80"  # Access pgAdmin at http://localhost:9000
+  #   volumes:
+  #     - ./pgadmin-data:/var/lib/pgadmin
+  #   depends_on:
+  #     - xnat-db  # Wait until Postgres is ready
+  #   networks:
+  #     - app_network
 
 networks:
   app_network:
