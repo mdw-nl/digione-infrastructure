@@ -55,8 +55,7 @@ services:
     links: 
       - rabbitmq
     volumes:
-      - ./anonymiser_recipes:/recipes
-      - ./data/associationdata:/dicomsorter/data
+      - ./anonymiser_recipes:/anonymization/recipes
       - ./config.yaml:/app/config/config.yaml  # Mount config.yaml into the container
     networks:
       - app_network
@@ -105,29 +104,6 @@ services:
   #     - ./data/xnat_listener:/app/data
   #   networks:
   #     - app_network
-
-  send_xnat:
-    build: 
-      context: https://github.com/TomSinsel/send_xnat_data.git 
-      dockerfile: Dockerfile
-    container_name: "send_xnat"
-    environment:
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASSWORD=password
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-    links: 
-      - rabbitmq
-    volumes:
-      - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/anonymised_datasets:/app/anonimised_folder
-      - ./data/xnat_listener:/app/data
-      - ./data/associationdata:/dicomsorter/data
-    networks:
-      - app_network
 
   xnat-web:
     image: ghcr.io/mdw-nl/mdw-xnat:1.9
