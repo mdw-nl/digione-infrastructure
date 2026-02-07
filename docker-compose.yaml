@@ -38,7 +38,7 @@ services:
 
   scp-receiver:
     build:
-      context: https://github.com/mdw-nl/DICOM-Listner.git#feature/reject-based-on-patientid  # Current directory (where the Dockerfile is located)
+      context: https://github.com/mdw-nl/DICOM-Listner.git#digione  # Current directory (where the Dockerfile is located)
       dockerfile: Dockerfile
     container_name: "scp-receiver"
     environment:
@@ -52,10 +52,11 @@ services:
       - postgres
     ports:
       - "104:104"
+      - "9000:9000"
     links: 
       - rabbitmq
     volumes:
-      - ./anonymiser_recipes:/anonymization/recipes
+      - ./anonymiser_recipes:/recipes
       - ./config.yaml:/app/config/config.yaml  # Mount config.yaml into the container
     networks:
       - app_network
