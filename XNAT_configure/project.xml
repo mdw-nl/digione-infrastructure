@@ -17,4 +17,10 @@
         <xnat:name>BRAIN_project</xnat:name>
         <xnat:description>BRAIN project</xnat:description>
     </xnat:projectData>
+    <xnat:projectData>
+        <xnat:ID>PREACT</xnat:ID>
+        <xnat:secondary_ID>PREACTID</xnat:secondary_ID>
+        <xnat:name>PREACT_project</xnat:name>
+        <xnat:description>PREACT project</xnat:description>
+    </xnat:projectData>
 </xnat:projects>

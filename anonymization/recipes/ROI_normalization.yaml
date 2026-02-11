@@ -11,6 +11,8 @@ LUNG_L:
 GTV_1:
   - '^gtv[\s_-]*1$'
   - '^gtvp[\s_-]*1$'
+  - '^gtv[\s_-]*P$'
+
 
 SPINAL_CANAL_P:
   - '^spinal[\s_-]*canal(_p)?$'

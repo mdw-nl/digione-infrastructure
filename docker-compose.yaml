@@ -1,67 +1,69 @@
-version: '3'
 services:
-  # RabbitMQ service
   rabbitmq:
-    image: "rabbitmq:3-management"
-    container_name: "rabbitmq"
+    image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
-      - "5672:5672"  # RabbitMQ port for communication
-      - "15672:15672"  # Management console web UI port
+      - "5672:5672"   # RabbitMQ connection
+      - "15672:15672" # Management UI
     environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: password
-    healthcheck:
-      test: ["CMD", "curl", "-f", http://localhost:15672"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     networks:
-      - app_network
-
+      - digione
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
   postgres:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     networks:
-      - app_network
+      - digione
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
       interval: 30s
       timeout: 60s
       retries: 5
       start_period: 80s
 
-  scp-receiver:
-    build:
-      context: https://github.com/mdw-nl/DICOM-Listner.git#digione  # Current directory (where the Dockerfile is located)
-      dockerfile: Dockerfile
-    container_name: "scp-receiver"
+  dicom-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # build:
+    #   context: https://github.com/mdw-nl/DICOM-Listner.git#digione  # Current directory (where the Dockerfile is located)
+    #   dockerfile: Dockerfile
+    image: ghcr.io/mdw-nl/dicom-listner:digione
+    container_name: dicom-service
     environment:
+      - PYTHONUNBUFFERED=1
       - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASSWORD=password
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-      - postgres
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+
+
+    restart: on-failure    
     ports:
       - "104:104"
       - "9000:9000"
-    links: 
-      - rabbitmq
-    volumes:
-      - ./anonymiser_recipes:/recipes
-      - ./config.yaml:/app/config/config.yaml  # Mount config.yaml into the container
     networks:
-      - app_network
+      - digione
+    volumes:
+      - ./associationdata:/dicomsorter/data
+      - ./anonymization/recipes/:/dicomsorter/recipes/
+      - ./DICOM_solver/Config/config.yaml:/dicomsorter/Config/config.yaml
 
-  # # Anonymizer app service
+
   # radiomics:
   #   build:
   #     context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
@@ -85,63 +87,82 @@ services:
   #   networks:
   #     - app_network
 
-  # xnat_listener:
-  #   build:
-  #     context: https://github.com/TomSinsel/xnat_listener.git  # Current directory (where the Dockerfile is located)
-  #     dockerfile: Dockerfile
-  #   container_name: "xnat_listener"
-  #   environment:
-  #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-  #     - RABBITMQ_PORT=5672
-  #     - RABBITMQ_USER=user
-  #     - RABBITMQ_PASSWORD=password
-  #   restart: on-failure
-  #   depends_on:
-  #     - rabbitmq
-  #   links: 
-  #     - rabbitmq
-  #   volumes:
-  #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-  #     - ./data/xnat_listener:/app/data
-  #   networks:
-  #     - app_network
 
   xnat-web:
-    image: ghcr.io/mdw-nl/mdw-xnat:1.9
-    environment:
-      XNAT_VERSION: ${XNAT_VERSION}
-      XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
-      XNAT_SMTP_HOSTNAME: ${XNAT_SMTP_HOSTNAME}
-      XNAT_SMTP_PORT: ${XNAT_SMTP_PORT}
-      XNAT_SMTP_AUTH: ${XNAT_SMTP_AUTH}
-      XNAT_SMTP_USERNAME: ${XNAT_SMTP_USERNAME}
-      XNAT_SMTP_PASSWORD: ${XNAT_SMTP_PASSWORD}
-      XNAT_DATASOURCE_DRIVER: ${XNAT_DATASOURCE_DRIVER}
-      XNAT_DATASOURCE_URL: ${XNAT_DATASOURCE_URL}
-      XNAT_DATASOURCE_USERNAME: ${XNAT_DATASOURCE_USERNAME}
-      XNAT_DATASOURCE_PASSWORD: ${XNAT_DATASOURCE_PASSWORD}
-      TOMCAT_XNAT_FOLDER: ${TOMCAT_XNAT_FOLDER}
-      XNAT_ROOT: ${XNAT_ROOT}
-      XNAT_HOME: ${XNAT_HOME}
-      XNAT_EMAIL: ${XNAT_EMAIL}
-      CATALINA_OPTS: -Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
-    container_name: xnat-web
-    ports:
-      - 8080:8080
-      - 8104:8104
-    volumes:
-      - ./xnat/plugins:${XNAT_HOME}/plugins
-      - ./xnat-data/home/logs:${XNAT_HOME}/logs
-      - ./xnat-data/archive:${XNAT_ROOT}/archive
-      - ./xnat-data/build:${XNAT_ROOT}/build
-      - ./xnat-data/cache:${XNAT_ROOT}/cache
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./XNAT_configure:/XNAT_conf/XNAT_configure
-    depends_on:
-      - xnat-db
-    networks:
-      - app_network
+      image: ghcr.io/mdw-nl/mdw-xnat:1.9
+      environment:
+        XNAT_VERSION: ${XNAT_VERSION}
+        XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
+        XNAT_SMTP_HOSTNAME: ${XNAT_SMTP_HOSTNAME}
+        XNAT_SMTP_PORT: ${XNAT_SMTP_PORT}
+        XNAT_SMTP_AUTH: ${XNAT_SMTP_AUTH}
+        XNAT_SMTP_USERNAME: ${XNAT_SMTP_USERNAME}
+        XNAT_SMTP_PASSWORD: ${XNAT_SMTP_PASSWORD}
+        XNAT_DATASOURCE_DRIVER: ${XNAT_DATASOURCE_DRIVER}
+        XNAT_DATASOURCE_URL: ${XNAT_DATASOURCE_URL}
+        XNAT_DATASOURCE_USERNAME: ${XNAT_DATASOURCE_USERNAME}
+        XNAT_DATASOURCE_PASSWORD: ${XNAT_DATASOURCE_PASSWORD}
+        TOMCAT_XNAT_FOLDER: ${TOMCAT_XNAT_FOLDER}
+        XNAT_ROOT: ${XNAT_ROOT}
+        XNAT_HOME: ${XNAT_HOME}
+        XNAT_EMAIL: ${XNAT_EMAIL}
+        CATALINA_OPTS: -Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
+      container_name: xnat-web
+      ports:
+        - 8080:8080
+        - 8104:8104
+      volumes:
+        - ./xnat/plugins:${XNAT_HOME}/plugins
+        - ./xnat-data/home/logs:${XNAT_HOME}/logs
+        - ./xnat-data/archive:${XNAT_ROOT}/archive
+        - ./xnat-data/build:${XNAT_ROOT}/build
+        - ./xnat-data/cache:${XNAT_ROOT}/cache
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ./XNAT_configure:/XNAT_conf/XNAT_configure
+      depends_on:
+        - xnat-db
+      networks:
+        - digione
 
+
+  dvh_consumer:
+    build:
+      context: ../dvh_consumer
+      dockerfile: Dockerfile
+    image: dvh_consumer:generalize_for_digione
+    container_name: dvh_consumer
+    # image: ghcr.io/mdw-nl/dvh_consumer:generalize_for_digione
+    # container_name: "dvh_consumer"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - UPLOAD_DESTINATION=${UPLOAD_DESTINATION}
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    links:
+      - rabbitmq
+    volumes:
+      - ./DVH_data:/app/DVH_data # Mount config.yaml into the container
+      - ./DICOM_solver/Config/config.yaml:/DICOM_solver/DICOM_solver/Config/config.yaml  # Mount config.yaml into the container
+      - ./associationdata:/dicomsorter/data
+
+    networks:
+      - digione
+    command:
+      - sh
+      - -c
+      - |
+        /wait-for-postgres.sh python -m DICOM_solver.PostrgresDVHdb && \
+        python main.py
 
   xnat-db:
     image: postgres:${PG_VERSION}
@@ -158,7 +179,7 @@ services:
       - XNAT_DATASOURCE_USERNAME=${XNAT_DATASOURCE_USERNAME}
       - XNAT_DATASOURCE_PASSWORD=${XNAT_DATASOURCE_PASSWORD}
     networks:
-      - app_network
+      - digione
 
 
   xnat-nginx:
@@ -174,23 +195,7 @@ services:
     links:
       - xnat-web
     networks:
-      - app_network
-
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   container_name: pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
-  #   ports:
-  #     - "9000:80"  # Access pgAdmin at http://localhost:9000
-  #   volumes:
-  #     - ./pgadmin-data:/var/lib/pgadmin
-  #   depends_on:
-  #     - xnat-db  # Wait until Postgres is ready
-  #   networks:
-  #     - app_network
-
+      - digione
 networks:
-  app_network:
+  digione:
     driver: bridge

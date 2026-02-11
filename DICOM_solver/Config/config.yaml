@@ -1,0 +1,22 @@
+postgres:
+  host: "host.docker.internal"
+  port: "5432"
+  username: "postgres"
+  password: "postgres"
+  db: "postgres"
+rabbitMQ:
+  host: "host.docker.internal"
+  port: "5672"
+  username: "user"
+  password: "password"
+  queue_name: "DICOM_Processor"
+xnat:
+  host: "rabbitmq"
+  localhost: "localhost"
+  port: "5672"
+  username: "user"
+  password: "password"
+  queue_name: "xnat"
+API:
+    host: "host.docker.internal"
+    port: "8666"
