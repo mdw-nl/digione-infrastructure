@@ -17,6 +17,12 @@ xnat:
   username: "user"
   password: "password"
   queue_name: "xnat"
+radiomics:
+  host: "host.docker.internal"
+  port: "5672"
+  username: "user"
+  password: "password"
+  queue_name: "radiomics" 
 API:
     host: "host.docker.internal"
     port: "8666"

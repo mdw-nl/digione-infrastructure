@@ -44,7 +44,7 @@ rabbitMQ:
   host: "host.docker.internal"
   port: "5672"
   <<: *default_creds
-  queue_name: "DICOM_Processor"
+  queue_name: "DICOM_processor"
 
 scp-receiver:
   host: "rabbitmq"

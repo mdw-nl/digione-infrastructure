@@ -40,8 +40,9 @@ services:
       rabbitmq:
         condition: service_healthy
     # build:
-    #   context: https://github.com/mdw-nl/DICOM-Listner.git#digione  # Current directory (where the Dockerfile is located)
+    #   context: ../DICOM-listner
     #   dockerfile: Dockerfile
+    # image: dicom-listner:digione
     image: ghcr.io/mdw-nl/dicom-listner:digione
     container_name: dicom-service
     environment:
@@ -64,28 +65,33 @@ services:
       - ./DICOM_solver/Config/config.yaml:/dicomsorter/Config/config.yaml
 
 
-  # radiomics:
-  #   build:
-  #     context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
-  #     dockerfile: Dockerfile
-  #   container_name: "radiomics"
-  #   environment:
-  #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-  #     - RABBITMQ_PORT=5672
-  #     - RABBITMQ_USER=user
-  #     - RABBITMQ_PASSWORD=password
-  #   restart: on-failure
-  #   depends_on:
-  #     - rabbitmq
-  #   links: 
-  #     - rabbitmq
-  #   volumes:
-  #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
-  #     - ./data/anonymised_datasets:/app/anonimised_folder
-  #     - ./radiomics_settings:/radiomics_settings
-  #     - ./data/xnat_listener:/app/data
-  #   networks:
-  #     - app_network
+  radiomics:
+    # build:
+    #   context: ../radiomics
+    #   dockerfile: Dockerfile
+    # image: radiomics:main
+    build:
+      context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
+      dockerfile: Dockerfile
+    container_name: "radiomics"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+    volumes:
+      - ./DICOM_solver/Config/config.yaml:/app/config.yaml  # Mount config.yaml into the container
+      - ./data/anonymised_datasets:/app/anonimised_folder
+      - ./radiomics_settings:/radiomics_settings
+      - ./data/xnat_listener:/app/data
+    networks:
+      - digione
 
 
   xnat-web:
@@ -126,13 +132,13 @@ services:
 
 
   dvh_consumer:
-    build:
-      context: ../dvh_consumer
-      dockerfile: Dockerfile
-    image: dvh_consumer:generalize_for_digione
-    container_name: dvh_consumer
-    # image: ghcr.io/mdw-nl/dvh_consumer:generalize_for_digione
-    # container_name: "dvh_consumer"
+    # build:
+    #   context: ../dvh_consumer
+    #   dockerfile: Dockerfile
+    # image: dvh_consumer:generalize_for_digione
+    # container_name: dvh_consumer
+    image: ghcr.io/mdw-nl/dvh_consumer:generalize_for_digione
+    container_name: "dvh_consumer"
     environment:
       - PYTHONUNBUFFERED=1
       - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
