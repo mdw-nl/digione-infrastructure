@@ -3,7 +3,7 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # RabbitMQ connection
+      - "5672:5672" # RabbitMQ connection
       - "15672:15672" # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
@@ -27,7 +27,7 @@ services:
     networks:
       - digione
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 30s
       timeout: 60s
       retries: 5
@@ -47,13 +47,12 @@ services:
     container_name: dicom-service
     environment:
       - PYTHONUNBUFFERED=1
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_HOST=rabbitmq # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
 
-
-    restart: on-failure    
+    restart: on-failure
     ports:
       - "104:104"
       - "9000:9000"
@@ -64,84 +63,75 @@ services:
       - ./anonymization/recipes/:/dicomsorter/recipes/
       - ./DICOM_solver/Config/config.yaml:/dicomsorter/Config/config.yaml
 
+  # radiomics:
+  #   build:
+  #     context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
+  #     dockerfile: Dockerfile
+  #   container_name: "radiomics"
+  #   environment:
+  #     - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+  #     - RABBITMQ_PORT=5672
+  #     - RABBITMQ_USER=user
+  #     - RABBITMQ_PASSWORD=password
+  #   restart: on-failure
+  #   depends_on:
+  #     - rabbitmq
+  #   links:
+  #     - rabbitmq
+  #   volumes:
+  #     - ./config.yaml:/app/config.yaml  # Mount config.yaml into the container
+  #     - ./data/anonymised_datasets:/app/anonimised_folder
+  #     - ./radiomics_settings:/radiomics_settings
+  #     - ./data/xnat_listener:/app/data
+  #   networks:
+  #     - app_network
 
-  radiomics:
-    # build:
-    #   context: ../radiomics
-    #   dockerfile: Dockerfile
-    # image: radiomics:main
-    build:
-      context: https://github.com/mdw-nl/radiomics.git  # Current directory (where the Dockerfile is located)
-      dockerfile: Dockerfile
-    container_name: "radiomics"
+  xnat-web:
+    image: ghcr.io/mdw-nl/mdw-xnat:1.9
     environment:
-      - PYTHONUNBUFFERED=1
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
-    restart: on-failure
-    depends_on:
-      - rabbitmq
-    links: 
-      - rabbitmq
+      XNAT_VERSION: ${XNAT_VERSION}
+      XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
+      XNAT_SMTP_HOSTNAME: ${XNAT_SMTP_HOSTNAME}
+      XNAT_SMTP_PORT: ${XNAT_SMTP_PORT}
+      XNAT_SMTP_AUTH: ${XNAT_SMTP_AUTH}
+      XNAT_SMTP_USERNAME: ${XNAT_SMTP_USERNAME}
+      XNAT_SMTP_PASSWORD: ${XNAT_SMTP_PASSWORD}
+      XNAT_DATASOURCE_DRIVER: ${XNAT_DATASOURCE_DRIVER}
+      XNAT_DATASOURCE_URL: ${XNAT_DATASOURCE_URL}
+      XNAT_DATASOURCE_USERNAME: ${XNAT_DATASOURCE_USERNAME}
+      XNAT_DATASOURCE_PASSWORD: ${XNAT_DATASOURCE_PASSWORD}
+      TOMCAT_XNAT_FOLDER: ${TOMCAT_XNAT_FOLDER}
+      XNAT_ROOT: ${XNAT_ROOT}
+      XNAT_HOME: ${XNAT_HOME}
+      XNAT_EMAIL: ${XNAT_EMAIL}
+      CATALINA_OPTS: -Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
+    container_name: xnat-web
+    ports:
+      - 8080:8080
+      - 8104:8104
     volumes:
-      - ./DICOM_solver/Config/config.yaml:/app/config.yaml  # Mount config.yaml into the container
-      - ./data/anonymised_datasets:/app/anonimised_folder
-      - ./radiomics_settings:/radiomics_settings
-      - ./data/xnat_listener:/app/data
+      - ./xnat/plugins:${XNAT_HOME}/plugins
+      - ./xnat-data/home/logs:${XNAT_HOME}/logs
+      - ./xnat-data/archive:${XNAT_ROOT}/archive
+      - ./xnat-data/build:${XNAT_ROOT}/build
+      - ./xnat-data/cache:${XNAT_ROOT}/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./XNAT_configure:/XNAT_conf/XNAT_configure
+      - ./XNAT_configure/configure_XNAT.py:/XNAT_conf/configure_XNAT.py
+    depends_on:
+      - xnat-db
     networks:
       - digione
 
-
-  xnat-web:
-      image: ghcr.io/mdw-nl/mdw-xnat:1.9
-      environment:
-        XNAT_VERSION: ${XNAT_VERSION}
-        XNAT_SMTP_ENABLED: ${XNAT_SMTP_ENABLED}
-        XNAT_SMTP_HOSTNAME: ${XNAT_SMTP_HOSTNAME}
-        XNAT_SMTP_PORT: ${XNAT_SMTP_PORT}
-        XNAT_SMTP_AUTH: ${XNAT_SMTP_AUTH}
-        XNAT_SMTP_USERNAME: ${XNAT_SMTP_USERNAME}
-        XNAT_SMTP_PASSWORD: ${XNAT_SMTP_PASSWORD}
-        XNAT_DATASOURCE_DRIVER: ${XNAT_DATASOURCE_DRIVER}
-        XNAT_DATASOURCE_URL: ${XNAT_DATASOURCE_URL}
-        XNAT_DATASOURCE_USERNAME: ${XNAT_DATASOURCE_USERNAME}
-        XNAT_DATASOURCE_PASSWORD: ${XNAT_DATASOURCE_PASSWORD}
-        TOMCAT_XNAT_FOLDER: ${TOMCAT_XNAT_FOLDER}
-        XNAT_ROOT: ${XNAT_ROOT}
-        XNAT_HOME: ${XNAT_HOME}
-        XNAT_EMAIL: ${XNAT_EMAIL}
-        CATALINA_OPTS: -Xms${XNAT_MIN_HEAP} -Xmx${XNAT_MAX_HEAP} -Dxnat.home=${XNAT_HOME}
-      container_name: xnat-web
-      ports:
-        - 8080:8080
-        - 8104:8104
-      volumes:
-        - ./xnat/plugins:${XNAT_HOME}/plugins
-        - ./xnat-data/home/logs:${XNAT_HOME}/logs
-        - ./xnat-data/archive:${XNAT_ROOT}/archive
-        - ./xnat-data/build:${XNAT_ROOT}/build
-        - ./xnat-data/cache:${XNAT_ROOT}/cache
-        - /var/run/docker.sock:/var/run/docker.sock
-        - ./XNAT_configure:/XNAT_conf/XNAT_configure
-      depends_on:
-        - xnat-db
-      networks:
-        - digione
-
-
   dvh_consumer:
-    # build:
-    #   context: ../dvh_consumer
-    #   dockerfile: Dockerfile
-    # image: dvh_consumer:generalize_for_digione
-    # container_name: dvh_consumer
+    build:
+      context: ../dvh_consumer
+      dockerfile: Dockerfile
+    container_name: dvh_consumer
     image: ghcr.io/mdw-nl/dvh_consumer:generalize_for_digione
-    container_name: "dvh_consumer"
     environment:
       - PYTHONUNBUFFERED=1
-      - RABBITMQ_HOST=rabbitmq  # Service name of the RabbitMQ container
+      - RABBITMQ_HOST=rabbitmq # Service name of the RabbitMQ container
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
@@ -158,7 +148,7 @@ services:
       - rabbitmq
     volumes:
       - ./DVH_data:/app/DVH_data # Mount config.yaml into the container
-      - ./DICOM_solver/Config/config.yaml:/DICOM_solver/DICOM_solver/Config/config.yaml  # Mount config.yaml into the container
+      - ./DICOM_solver/Config/config.yaml:/DICOM_solver/DICOM_solver/Config/config.yaml # Mount config.yaml into the container
       - ./associationdata:/dicomsorter/data
 
     networks:
@@ -186,7 +176,6 @@ services:
       - XNAT_DATASOURCE_PASSWORD=${XNAT_DATASOURCE_PASSWORD}
     networks:
       - digione
-
 
   xnat-nginx:
     image: nginx:${NGINX_VERSION}
